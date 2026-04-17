@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模写スタジオ - Drawing Reference Tool</title>
+  <meta name="description" content="模写・デッサンのための画像参考表示ツール。画面スリープ防止機能付き。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <div class="main-content-area">
+      <!-- ランディング画面は削除されました -->
+  <!-- メインビューア画面 -->
+  <div id="viewer-screen" class="viewer-screen">
+    <!-- 上部ツールバー -->
+    <header class="toolbar" id="toolbar">
+      <div class="toolbar-left">
+        <span class="toolbar-title" id="image-name">画像をドラッグ＆ドロップしてください</span>
+      </div>
+
+      <div class="toolbar-center" style="gap: 16px;">
+        <!-- スリープ防止トグル -->
+        <div class="wake-lock-toggle active" id="wake-lock-toggle" title="スリープ防止">
+          <div class="wake-lock-indicator" id="wake-lock-indicator"></div>
+          <span class="wake-lock-label" id="wake-lock-label">スリープ防止: ON</span>
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <!-- 画像表示時間タイマー（砂時計） -->
+        <div class="timer-popup-container" style="position: relative; display: flex; align-items: center; margin-right: 8px;">
+          <div class="icon-btn" style="cursor: default;" title="画像を切り替えてからの時間">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h14v4l-4.5 5 4.5 5v4H5v-4l4.5-5L5 7Z"></path></svg>
+          </div>
+          <div class="timer-popup" id="image-timer-display">00:00</div>
+        </div>
+
+        <button class="toolbar-btn icon-btn" id="btn-fullscreen" title="フルスクリーン">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M3 7V4C3 3.44772 3.44772 3 4 3H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M13 3H16C16.5523 3 17 3.44772 17 4V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M17 13V16C17 16.5523 16.5523 17 16 17H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M7 17H4C3.44772 17 3 16.5523 3 16V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="viewer-body" id="viewer-body">
+      <!-- 画像表示エリア -->
+        <main class="canvas-area" id="canvas-area">
+          <div id="drop-message" class="drop-message">
+            <svg width="64" height="64" viewBox="0 0 48 48" fill="none" class="drop-icon">
+              <path d="M24 8L24 32" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M16 16L24 8L32 16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M8 28V36C8 38.2091 9.79086 40 12 40H36C38.2091 40 40 38.2091 40 36V28" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <h2 style="font-size: 2rem; color: var(--text-primary); margin-top: 16px;">ここに画像をドロップ</h2>
+            <p style="color: var(--text-secondary); margin-top: 8px;">またはクリックしてファイルを追加</p>
+            <input type="file" id="file-input" accept="image/*" hidden>
+          </div>
+          <div class="image-container hidden" id="image-container">
+            <img id="reference-image" src="" alt="参考画像" draggable="false">
+            <!-- グリッドオーバーレイ -->
+            <div class="grid-overlay hidden" id="grid-overlay"></div>
+          </div>
+        </main>
+      </div>
+
+      <!-- 下部コントロールパネル -->
+    <footer class="control-panel" id="control-panel">
+      <div class="controls-row">
+        <!-- ズームコントロール -->
+        <div class="control-group">
+          <label class="control-label">ズーム</label>
+          <div class="control-buttons">
+            <button class="ctrl-btn" id="btn-zoom-out" title="縮小">−</button>
+            <span class="ctrl-value" id="zoom-value">100%</span>
+            <button class="ctrl-btn" id="btn-zoom-in" title="拡大">＋</button>
+            <button class="ctrl-btn" id="btn-zoom-fit" title="フィット">⊞</button>
+          </div>
+        </div>
+
+        <div class="control-divider"></div>
+
+        <!-- 画像操作 -->
+        <div class="control-group">
+          <label class="control-label">操作</label>
+          <div class="control-buttons">
+            <button class="ctrl-btn" id="btn-flip-h" title="左右反転">⇔</button>
+            <button class="ctrl-btn" id="btn-flip-v" title="上下反転">⇕</button>
+            <button class="ctrl-btn" id="btn-rotate" title="90°回転">↻</button>
+          </div>
+        </div>
+
+        <div class="control-divider"></div>
+
+        <!-- フィルター -->
+        <div class="control-group">
+          <label class="control-label">フィルター</label>
+          <div class="control-buttons">
+            <button class="ctrl-btn toggle-btn" id="btn-grayscale" title="グレースケール">🎨</button>
+            <button class="ctrl-btn toggle-btn" id="btn-invert" title="色反転">🔄</button>
+          </div>
+        </div>
+
+        <div class="control-divider"></div>
+
+        <!-- グリッド -->
+        <div class="control-group">
+          <label class="control-label">グリッド</label>
+          <div class="control-buttons">
+            <button class="ctrl-btn toggle-btn" id="btn-grid" title="グリッド表示">📐</button>
+            <select class="ctrl-select" id="grid-size" title="グリッドサイズ">
+              <option value="2">2×2</option>
+              <option value="3" selected>3×3</option>
+              <option value="4">4×4</option>
+              <option value="5">5×5</option>
+              <option value="8">8×8</option>
+            </select>
+            <button class="ctrl-btn toggle-btn" id="btn-center-line" title="中央線の強調">⌖</button>
+          </div>
+        </div>
+
+        <div class="control-divider"></div>
+
+
+
+        <!-- リセット -->
+        <div class="control-group">
+          <button class="ctrl-btn reset-btn" id="btn-reset" title="すべてリセット">リセット</button>
+        </div>
+
+        <div class="control-divider"></div>
+      </div>
+      </footer>
+    </div>
+  </div> <!-- /main-content-area -->
+
+  <!-- 共通サムネイルサイドバー -->
+  <aside class="thumbnail-sidebar hidden" id="thumbnail-sidebar" aria-label="画像一覧">
+    <button id="btn-toggle-thumbnails" class="toggle-thumbnails-btn" title="サムネイル表示切替">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <div class="thumbnail-list" id="thumbnail-list">
+      <!-- サムネイル画像が動的に追加されます -->
+    </div>
+  </aside>
+</div> <!-- /app-layout -->
+
+<!-- 通知トースト -->
+  <div class="toast hidden" id="toast">
+    <span id="toast-message"></span>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
